@@ -21,7 +21,7 @@ Weekly notes on what changed, what's working, what's blocking, and what's next.
 
 ---
 
-## Week of [Project Start — Backfill]
+## Week of [May 23, 2026]
 
 **What changed this week:**
 - Established core pipeline: video input → YOLOv8-Pose → maneuver classification → annotated video output
