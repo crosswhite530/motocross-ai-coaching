@@ -24,7 +24,7 @@ Each entry follows this structure:
 
 ---
 
-## [Project Start] — Framework Selection: Pose Estimation
+## [May 23, 2026] — Framework Selection: Pose Estimation
 
 **Problem:** Needed a pose estimation framework that could handle motocross footage — fast motion, variable distance, complex environments, no cloud dependency.
 
@@ -40,7 +40,7 @@ Each entry follows this structure:
 
 ---
 
-## [Early Development] — Output Format: Annotated Video Overlay
+## [May 24, 2026] — Output Format: Annotated Video Overlay
 
 **Problem:** How to present maneuver detection and coaching feedback to the user in a useful, demonstrable way.
 
@@ -57,7 +57,7 @@ Each entry follows this structure:
 
 ---
 
-## [In Progress] — 1st Person vs 3rd Person Handling
+## [June 13, 2026] — 1st Person vs 3rd Person Handling
 
 **Problem:** Model struggles to distinguish POV/helmet cam footage from 3rd person footage. The visual features are fundamentally different between perspectives, causing incorrect analysis when the wrong processing branch runs.
 
@@ -74,7 +74,7 @@ Each entry follows this structure:
 
 ---
 
-## [Planned] — Motorcycle Detection Addition
+## [June 13, 2026] — Motorcycle Detection Addition
 
 **Problem:** When rider is far from camera or at oblique angles, human/pose detection confidence drops below threshold and detection is lost.
 
