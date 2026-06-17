@@ -117,4 +117,20 @@ Each entry follows this structure:
 
 ---
 
+## [June 17, 2026] — PerspectiveClassifier: Deferring YOLO-Based Detection Heuristic
+
+**Problem:** After fixing the sampling bug and improving smoothing logic (see June 17, 2026 entries above), we considered adding a second, independent perspective signal: using the existing YOLOv8 rider/bike detector to produce perspective cues — full rider and bike visible in frame suggesting third-person, handlebars or hands visible at the bottom of frame suggesting first-person/POV. This was originally motivated by a noisy, low-confidence stretch (0.50–0.65 confidence, frequent label flips) observed in early testing on My_Whip_Attempt.mp4, before the consecutive-confidence smoothing fix was implemented.
+
+**Options considered:**
+- **Build the YOLO-based heuristic now** — run it independently from CLIP, flag disagreements between the two methods, accumulate data for future fusion or arbitration logic
+- **Defer and re-evaluate** — revisit only if the classifier demonstrates accuracy problems on additional footage going forward
+
+**Decision:** Defer the YOLO-based detection heuristic. The problem that motivated it no longer has clear evidence behind it.
+
+**Reasoning:** The consecutive-confidence smoothing fix already resolved the noisy-stretch issue that prompted this idea — validated at 0 false switches on pure third-person footage and 0.33s detection latency on mixed footage against a 0.5s target. Adding a second model signal, a disagreement-flagging mechanism, and eventual fusion logic before there is a demonstrated need adds engineering overhead and new surface area for bugs without a corresponding, currently-justified benefit. The idea is documented here and available to revisit if the classifier shows accuracy problems on footage types not yet tested (e.g. very low light, extreme oblique angles, very distant riders).
+
+**Outcome:** Moving on to other pipeline priorities. This entry records that the YOLO-based perspective heuristic was deliberately considered and deferred — not overlooked — and documents the conditions under which it should be revisited.
+
+---
+
 *Add new entries above this line as decisions are made.*
