@@ -101,4 +101,20 @@ Each entry follows this structure:
 
 ---
 
+## [June 17, 2026] — PerspectiveClassifier: Smoothing Strategy and Latency Guarantee
+
+**Problem:** After fixing the sampling/caching bug (see June 17, 2026 — "PerspectiveClassifier: Sampling Gate and Confidence Override Bug Fix"), validation revealed that the majority-vote smoothing window introduced ~2 seconds of detection lag on real perspective changes. Additionally, `sample_rate` and `window_size` were coupled in a way that made actual detection latency hard to reason about or guarantee — the relationship between those two parameters and the real-world time-to-detect was not explicit.
+
+**Options considered:**
+- **Keep majority-vote smoothing, tune window size** — reducing the window size would lower latency but increase false switch rate; the tradeoff is not well-controlled and the latency is still a function of two coupled parameters
+- **Consecutive-confidence method** — flip the smoothed perspective only when the last N consecutive raw samples all agree on the same label AND each meets a minimum confidence threshold; derive `sample_rate` from the video's actual fps so that N consecutive samples always fit within a fixed real-world latency target
+
+**Decision:** Consecutive-confidence method with `required_consecutive=3`, `min_confidence=0.65`, and `sample_rate` derived from video fps as `(target_latency_sec * fps) // required_consecutive`.
+
+**Reasoning:** The consecutive-confidence approach decouples the two concerns that majority-vote conflated: noise robustness (controlled by `required_consecutive` and `min_confidence`) and latency guarantee (controlled by the `sample_rate` derivation). Holding `required_consecutive` fixed at 3 regardless of fps keeps CLIP calls per second constant across different frame rate videos — scaling it up with fps would have increased compute cost for a noise-robustness benefit not yet proven necessary. Deriving `sample_rate` from fps means the same 0.5 second latency target is preserved across videos without manual tuning per file.
+
+**Outcome:** Validated on two 30fps videos (derived `sample_rate=5`). Pure 3rd-person footage (My_Whip_Attempt.mp4): 0 false switches across the full clip, down from 4 with majority-vote smoothing. Mixed footage with a real perspective change (Motocross Whip.mp4): switch detected with 0.33s latency (raw label changed at 5.00s, smoothed output confirmed at 5.33s) against a 0.5s target — major improvement over the ~2s lag of the prior approach. Post-switch low-confidence flips back to the prior label were correctly ignored. Files modified: `Python Files/perspective_classifier.py` (added `set_fps()`, `smooth_perspective_consecutive()`; kept legacy `smooth_perspective()` for reference), `Python Files/test_perspective.py` (reads fps via `cv2.CAP_PROP_FPS` instead of assuming 30fps).
+
+---
+
 *Add new entries above this line as decisions are made.*

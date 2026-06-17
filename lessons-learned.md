@@ -44,4 +44,14 @@ Things that failed, surprised us, or changed our understanding of the problem. T
 
 ---
 
+## Majority-Vote Smoothing Conflates Noise Robustness and Detection Latency
+
+**What we tried:** A majority-vote window to smooth the raw per-frame perspective classifications — the smoothed label only flips if more than half of the frames in a fixed window agree on the new label.
+
+**What happened:** The smoother worked well enough at suppressing false switches but introduced ~2 seconds of detection lag on real perspective changes. Worse, the actual latency was a function of two coupled parameters (`sample_rate` and `window_size`) with no explicit relationship to real-world time, making it hard to reason about or guarantee how quickly a genuine switch would be detected. The lag only became visible after fixing the sampling/caching bug — the smoother had been masking a problem that would have been obvious in production.
+
+**What we learned:** Smoothing strategies that couple noise robustness and latency in a single parameter are hard to tune and hard to reason about. The better design is to separate the two concerns explicitly: use a consecutive-confidence requirement (N consecutive samples must agree above a confidence threshold) for noise robustness, and derive the sampling rate from video fps to provide a hard real-world latency guarantee. When those are independent levers, you can tighten or loosen either one without breaking the other.
+
+---
+
 *Add new entries as failures and surprises occur. This document is a strength, not a weakness.*
