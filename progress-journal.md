@@ -44,4 +44,22 @@ Weekly notes on what changed, what's working, what's blocking, and what's next.
 
 ---
 
+## Week of [June 17, 2026]
+
+**What changed this week:**
+- Diagnosed and fixed two bugs in `perspective_classifier.py`: sampling gate (`frame_counter % sample_rate == 1`) never fired when `sample_rate=1` because modulo 1 always returns 0; a confidence threshold branch was silently overriding CLIP's output with no logging
+- Validation re-run confirmed both fixes: classifier now runs per-frame and produces real varying output
+
+**What's working now that wasn't:**
+- CLIP-based PerspectiveClassifier producing real per-frame classifications instead of a single cached result repeated across all frames
+- Perspective switch detection working on mixed footage: 1 switch detected at frame 150 (THIRD_PERSON → FIRST_PERSON), confidence range 0.6440–0.9307, consistent with test video content
+
+**What's blocking me:**
+- Classifier not yet validated on pure single-perspective footage — need to confirm no false switches before trusting it in the main pipeline
+
+**Next session focus:**
+- Stress test on pure 3rd-person-only and pure 1st-person-only footage, then integrate into main pipeline if results hold
+
+---
+
 *Add new entries above this line each week.*

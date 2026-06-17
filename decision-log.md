@@ -84,4 +84,21 @@ Each entry follows this structure:
 
 ---
 
+## [June 17, 2026] — PerspectiveClassifier: Sampling Gate and Confidence Override Bug Fix
+
+**Problem:** Validation testing of the CLIP-based PerspectiveClassifier (see June 13, 2026 — "1st Person vs 3rd Person Handling") returned identical confidence scores (0.6440) across all 11 sampled frames with zero perspective switches detected, despite the test video containing both 3rd person and POV footage. The classifier appeared functional but was producing useless output.
+
+**Options considered:**
+- **Model quality failure** — CLIP embeddings may not separate 1st/3rd person perspectives well on motocross footage, requiring a different approach entirely
+- **Sampling gate logic bug** — the `frame_counter % sample_rate` condition may not be firing correctly, causing CLIP to run only once and return a cached result on every subsequent call
+- **Silent output override** — a confidence threshold branch may be overriding the model's real predictions without logging, masking the actual classification result
+
+**Decision:** Trace the logic path before concluding model failure. Both logic bugs confirmed and fixed: gate condition changed from `== 1` to `== 0`, `frame_counter` increment moved to after the gate check, and confidence threshold override removed pending further validation on more footage.
+
+**Reasoning:** Identical confidence values across all frames was a strong signal that CLIP was not running per-frame — a caching or gate issue, not a model quality issue. Diagnosing the execution path first avoided prematurely abandoning CLIP. The confidence override was particularly deceptive: it produced plausible-looking output while hiding what the model actually predicted, with no log entry to indicate it had fired.
+
+**Outcome:** Validation passed after the fix. Confidence values now vary per frame (range: 0.6440–0.9307). Classifier correctly detected 1 perspective switch at frame 150 (THIRD_PERSON → FIRST_PERSON) with high confidence on both sides (0.93 and 0.85), consistent with known test video content. Resolves the open decision from June 13 — CLIP-based binary classification is confirmed viable. Next step: stress test on pure single-perspective footage before pipeline integration.
+
+---
+
 *Add new entries above this line as decisions are made.*

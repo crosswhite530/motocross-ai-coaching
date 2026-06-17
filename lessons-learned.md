@@ -34,4 +34,14 @@ Things that failed, surprised us, or changed our understanding of the problem. T
 
 ---
 
+## Off-by-One in a Sampling Gate Can Silently Disable a Component
+
+**What we tried:** CLIP-based PerspectiveClassifier with a per-frame sampling gate (`frame_counter % sample_rate == 1`) to control how often the model runs.
+
+**What happened:** When `sample_rate=1` was passed from the test script, modulo 1 always returns 0 — so the gate condition `== 1` never fired. CLIP ran exactly once on the first frame and returned a cached result on every subsequent call. All 11 sampled frames reported identical confidence (0.6440) with zero perspective switches, making the classifier look broken rather than misconfigured. A second bug compounded the diagnosis: a confidence threshold (`if confidence < 0.65`) was silently overriding CLIP's output with no logging, so even once the gate was fixed, the real model output would have remained hidden.
+
+**What we learned:** Silent overrides and ambiguous gate conditions are a dangerous combination — each one individually produces misleading output, and together they make root cause diagnosis much harder. Two rules going forward: (1) sampling gates should fire on `== 0`, not `== 1`, since modulo with any divisor produces 0 on the first iteration; (2) any branch that overrides a model's output should log that it fired, or it becomes invisible during debugging.
+
+---
+
 *Add new entries as failures and surprises occur. This document is a strength, not a weakness.*
