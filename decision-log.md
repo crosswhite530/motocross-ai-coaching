@@ -66,11 +66,11 @@ Each entry follows this structure:
 - Preprocessing classifier that routes footage before analysis
 - Separate specialized models per perspective
 
-**Decision:** *[In progress — to be finalized]*
+**Decision:** CLIP zero-shot binary classifier as a preprocessing step — routes footage by perspective before any downstream analysis runs. See June 17, 2026 entries for full implementation detail, bug-fix history, and smoothing strategy.
 
 **Reasoning under consideration:** 1st person footage has distinctive visual features (different motion blur patterns, horizon behavior, no visible rider body). A lightweight binary classifier (1st/3rd) as a preprocessing step would allow each downstream branch to be optimized for its specific inputs without the single-model approach trying to do too much.
 
-**Outcome:** *[Pending]*
+**Outcome:** Resolved. CLIP-based classification validated June 17, 2026 (see "PerspectiveClassifier: Sampling Gate and Confidence Override Bug Fix" and "PerspectiveClassifier: Smoothing Strategy and Latency Guarantee"). Deployed as a hosted service June 23, 2026 and validated end-to-end with real footage — see "Deploying the Perspective Classifier as a Hosted Service."
 
 ---
 
