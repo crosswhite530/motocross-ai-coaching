@@ -133,4 +133,56 @@ Each entry follows this structure:
 
 ---
 
+## [June 23, 2026] — Deploying the Perspective Classifier as a Hosted Service
+
+**Problem:** The CLIP-based perspective classifier (see June 17, 2026 entries) was validated locally, but a local script can't serve requests from a mobile app — it only runs when a developer's machine is on, and it can't scale to multiple users. The validated logic needed to become a hosted service.
+
+**Options considered:**
+
+- **Monolithic GPU function vs. split CPU/GPU functions:** One option was a single cloud function handling video download, format normalization, and GPU classification all in one place. The alternative was splitting CPU-only preprocessing (download, validate, normalize) from GPU-only classification into separate functions. The key consideration: cloud GPU instances are significantly more expensive per second than CPU instances, and most failure modes (corrupt uploads, oversized files, network errors) are detectable before any GPU work is needed.
+
+- **Quota consumption at request acceptance vs. on confirmed success only:** The simpler design deducts from a user's monthly quota the moment a valid request arrives. The alternative deducts only after a successful result is written to the database. The question is who absorbs the cost of infrastructure failures — the user's submission count, or the operator's risk exposure.
+
+- **Single generic error vs. structured per-checkpoint error codes:** Whether to return a uniform "something went wrong" message or distinct, actionable error codes at each failure point: upload unreachable, invalid video format, duration limit exceeded, normalization failure, classification failure.
+
+- **Flat 90-second duration cap vs. tiered or pay-per-length caps:** Whether to vary the video duration limit by subscription tier or video length, or use a single flat cap for all users. The decision depends on knowing the cost structure of the full pipeline — including Phase 2 components not yet built.
+
+**Decision:** Three-function Modal architecture:
+
+- **`fastapi_app` / `ingest_video`** (web endpoint): Checks quota and failure-rate limits, spawns processing asynchronously, and returns an immediate "accepted" response to the client. Keeps the user-facing request fast and decoupled from processing time.
+- **`run_pipeline`** (CPU): Downloads the video from cloud storage, validates duration against the 90-second cap, and normalizes to 720p/30fps via ffmpeg. All work that doesn't require a GPU happens here.
+- **`run_inference`** (GPU T4): Runs the CLIP perspective classifier on the normalized video, writes the result to the database, and only then increments the user's quota counter. Classification happens here and only here.
+
+Quota is decremented on confirmed success only. A separate failure-rate limiter — 5 failures within any 15-minute window, tracked independently of the quota counter — gates continued access after repeated failures. Structured error codes surface distinct messages at each failure checkpoint.
+
+Duration cap: flat 90 seconds across all tiers for now.
+
+**Reasoning:** The CPU/GPU split is the central architectural decision and the reasoning is straightforward: cheap CPU infrastructure should absorb the work that doesn't require expensive GPU resources. Corrupt uploads, oversized videos, and network failures are all detectable during preprocessing — catching them there means they never reach the GPU billing clock.
+
+Gating quota on confirmed success rather than request acceptance means infrastructure failures — a transient cloud error, a processing bug, a GPU timeout — don't silently consume a user's monthly submission. Users should only be charged for what actually worked.
+
+The failure-rate limiter closes a cost-exposure gap the success-only quota design would otherwise leave open: a client retrying failed requests in a tight loop wouldn't consume quota under the success-only model, but it could still repeatedly spin up GPU instances. The two mechanisms are independent by design — one protects the user from infrastructure failures, the other protects the service from retry-loop cost exposure.
+
+Keeping the duration cap flat defers a decision that depends on cost data that doesn't exist yet. Phase 2 (maneuver detection and coaching) will substantially change the cost profile of processing a 60-second video vs. a 30-second one. Committing to a tiered cap structure before those costs are measured would be guessing at the wrong time.
+
+**Outcome:** Deployed to Modal on June 23, 2026. First full end-to-end validation completed the same day using a real third-person test clip: the pipeline returned `label: "third_person"`, `confidence: 0.9033`, `is_stable: true`, and the user's quota incremented from 0 to 1 only after the successful result write — confirming the full chain: request accepted → quota checked → processing spawned asynchronously → video downloaded and normalized → GPU classification run → result written to database → quota incremented on success.
+
+---
+
+## [June 23, 2026] — Staging Infrastructure Before Phase 2 Feature Work
+
+**Problem:** Every deployment to this point went directly to the production Modal app and Supabase project. While nothing real was running, that was acceptable. With the perspective classifier now validated and serving correctly in production, adding new pipeline components (the next step being YOLOv8-Pose detection) by redeploying directly to the production environment risks disrupting a pipeline that currently works.
+
+**Options considered:**
+- Continue deploying directly to production and accept the disruption risk as new components are added incrementally.
+- Set up an isolated staging environment before writing any Phase 2 pipeline code, and validate all new components in staging before promoting to production.
+
+**Decision:** Set up a dedicated Modal staging environment (separate from the production `main` environment) and a separate free-tier Supabase project for staging — fully isolated from production data and tables. All Phase 2 components get built and validated in staging first; production only receives changes confirmed working.
+
+**Reasoning:** The perspective classifier pipeline now works correctly in production. Treating it as the stable baseline worth protecting — rather than a convenient place to keep iterating — is the right shift in posture at this point in the project. Staging isolation means a broken YOLOv8 integration or a schema change can't take down a working service. It also keeps test data out of production tables that will need to stay trustworthy once real users exist.
+
+**Outcome:** Not yet implemented — planned as the first task before any Phase 2 feature work begins.
+
+---
+
 *Add new entries above this line as decisions are made.*
