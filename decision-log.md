@@ -181,7 +181,7 @@ Keeping the duration cap flat defers a decision that depends on cost data that d
 
 **Reasoning:** The perspective classifier pipeline now works correctly in production. Treating it as the stable baseline worth protecting — rather than a convenient place to keep iterating — is the right shift in posture at this point in the project. Staging isolation means a broken YOLOv8 integration or a schema change can't take down a working service. It also keeps test data out of production tables that will need to stay trustworthy once real users exist.
 
-**Outcome:** Not yet implemented — planned as the first task before any Phase 2 feature work begins.
+**Outcome:** Implemented and validated on June 27, 2026. A dedicated Modal staging environment and a separate Supabase project were created, each fully isolated from production. The existing service code deployed to staging without modification — Modal's environment-scoped secrets mean the same `app.py` picks up staging credentials automatically. Validated end-to-end with a real video: pipeline classified correctly, quota incremented on confirmed success only, and production data confirmed unaffected by the staging test run.
 
 ---
 
