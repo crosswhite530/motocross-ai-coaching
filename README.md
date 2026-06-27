@@ -29,29 +29,31 @@ The system handles both **1st person (helmet/POV cam)** and **3rd person** foota
 ```
 Raw Video
     │
-    ▼
-[Perspective Classifier]
-1st person → POV analysis branch (line selection, track reading)
-3rd person → Full biomechanical analysis branch
+    │  Audio track preserved throughout — available to both branches;
+    │  how and where it integrates into each is TBD.
     │
     ▼
-[YOLOv8 — Rider + Bike Detection]
+[Perspective Classifier — CLIP, ViT-B/32]
     │
-    ▼
-[YOLOv8-Pose — Keypoint Extraction]
-Shoulders, elbows, hips, knees, ankles
-    │
-    ▼
-[Maneuver Classifier]
-Jump / Whip / Scrub / Corner / Whoops / etc.
-    │
-    ▼
-[Claude API — Coaching Feedback Engine]
-Keypoints + maneuver type → biomechanical reasoning → coaching cue
-    │
-    ▼
-[Annotated Video Output]
-Maneuver label + coaching feedback overlay
+    ├───────────────────────────────────────────┐
+    │                                           │
+    ▼                                           ▼
+[1ST PERSON / POV branch —          [3RD PERSON branch —
+ vision only, not yet decided]       vision only, not yet decided]
+TBD: track/line analysis,           TBD: YOLOv8 rider/bike
+audio cues, handlebar/              detection, pose extraction,
+front-fender visual cues —          maneuver classification,
+order and integration               audio cues — order and
+undecided                           integration undecided
+    │                                           │
+    └─────────────────┬─────────────────────────┘
+                      ▼
+         [Claude API — Coaching Engine]
+         Branch-appropriate coaching cues
+                      │
+                      ▼
+         [Annotated Video Output]
+         Label + coaching feedback overlay
 ```
 
 ---
